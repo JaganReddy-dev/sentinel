@@ -5,7 +5,6 @@ from app.core.security.tokens.refresh_token.raw_refresh_token import (
     create_raw_refresh_token,
 )
 from app.utils.secret import get_required_secret
-from datetime import timedelta
 import uuid
 from app.core.security.tokens.jwt.jw_token import encoded_jwt, decoded_jwt
 from app.schemas.v1.request.tokens import JWTGenRequest
@@ -27,16 +26,15 @@ def get_algorithm() -> str:
     return get_required_secret("ALGORITHM")
 
 
-def create_refresh_token(user_id: str) -> dict:
+def create_refresh_token(user_id: str, now: int) -> dict:
     if not user_id:
         raise ValueError({"detail": "User Id is required!"})
     raw_token = create_raw_refresh_token()
     refresh_token = create_refresh_token_hash(raw_token)
     id = str(uuid.uuid4())
     raw_token = raw_token
-    now = utc_now()
-    created_at = int(now.timestamp())
-    expiry = int((now + timedelta(days=get_refresh_token_expiry())).timestamp())
+    created_at = now
+    expiry = int((now + (get_refresh_token_expiry() * 24 * 60 * 60)))
     revoked = False
 
     document = {
@@ -60,14 +58,13 @@ def create_jwt_token(payload: JWTGenRequest):
         "aud": "user",
     }
     jwt_token = encoded_jwt(document, get_jwt_secret(), get_algorithm())
-    now = utc_now()
     jwtDoc = {
         "token": jwt_token,
         "sub": payload.sub,
         "iss": document["iss"],
         "aud": document["aud"],
-        "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=5)).timestamp()),
+        "iat": payload.now,
+        "exp": payload.now + (5 * 60),
     }
 
     return jwtDoc
@@ -93,7 +90,7 @@ def verify_jwt_token(request: VerifyTokenRequest):
 
 def revoke_refresh_token(token: RefreshToken):
     data = token.model_dump()
-    data.update({"revoked": True, "expiry": int(utc_now().timestamp())})
+    data.update({"revoked": True, "exp": int(utc_now().timestamp())})
     return RefreshToken(**data)
 
 

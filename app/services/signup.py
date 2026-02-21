@@ -1,83 +1,62 @@
-from datetime import timedelta
+from dataclasses import dataclass
 from app.schemas.v1.request.signup import UserSignUpRequest
+from app.schemas.v1.internal.user_db_model import UserDBModel
+from app.schemas.v1.response.user import UserResponse
+from app.schemas.v1.internal.rt_db_model import RefreshTokenDBModel
 from app.schemas.v1.request.tokens import JWTGenRequest
+from app.schemas.v1.internal.password_db_model import PasswordDBModel
+from app.services.tokens import create_refresh_token, create_jwt_token
+from app.schemas.v1.response.token import JWTResponse
 from app.utils.utc_now import utc_now
 from app.core.security.password.hash_password import hash_password
-from app.services.tokens import (
-    create_refresh_token,
-    create_jwt_token,
-    get_refresh_token_expiry,
-)
-import uuid
-from pprint import pprint
+from app.models.user import UserModel
+from app.models.password import PasswordModel
+from app.models.refresh_token import RefreshTokenModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def signup_user(data: UserSignUpRequest):
-    user_id = str(uuid.uuid4())
-    now = utc_now()
-    timestamp = int(now.timestamp())
-    data.password = hash_password(data.password)
-    jwt = create_jwt_token(JWTGenRequest(sub=user_id))
-    refresh_token = create_refresh_token(user_id)
+@dataclass
+class SignupServiceResult:
+    """What the service returns to the route handler"""
 
-    new_user = {
-        "id": user_id,
-        "email": data.email.lower(),
-        "first_name": data.first_name.lower(),
-        "last_name": data.last_name.lower(),
-        "username": data.username.lower(),
-        "email_verified": False,
-        "phone": data.phone_number,
-        "country_code": data.country_code,
-        "is_active": True,
-        "is_locked": False,
-        "locked_until": None,
-        "failed_login_count": 0,
-        "last_login_at": None,
-        "created_at": timestamp,
-        "updated_at": timestamp,
-    }
-
-    password = {
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "hashed_password": data.password,
-        "previous_passwords": [],
-        "created_at": timestamp,
-        "password_changed_at": timestamp,
-    }
-
-    refresh_token_data = {
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "hashed_token": refresh_token,
-        "revoked": False,
-        "revoked_at": None,
-        "last_used_at": None,
-        "created_at": timestamp,
-        "expires_at": int(
-            (now + timedelta(days=get_refresh_token_expiry())).timestamp()
-        ),
-    }
-
-    return {
-        "user": new_user,
-        "password": password,
-        "refresh_token": refresh_token_data,
-        "jwt": jwt,
-    }
+    user_response: UserResponse
+    jwt_response: JWTResponse
+    rt_raw_token: str
 
 
-res = signup_user(
-    UserSignUpRequest(
-        email="H0OoI@example.com",
-        password="SecurePass123!",
-        username="johndoe",
-        first_name="John",
-        last_name="Doe",
-        phone_number="1234567890",
-        country_code="+1",
-        terms_accepted=True,
+async def signup_user(user: UserSignUpRequest, db: AsyncSession) -> SignupServiceResult:
+    now = int(utc_now().timestamp())
+
+    # 1. hash password
+    hashed_password = hash_password(user.password)
+
+    # 2. build pydantic DB models
+    user_in_db = UserDBModel.from_signup(user, now)
+    password_in_db = PasswordDBModel.from_signup(user_in_db.id, hashed_password, now)
+
+    # 3. generate tokens
+    rt = create_refresh_token(user_in_db.id, now)
+    jwt = create_jwt_token(JWTGenRequest(sub=user_in_db.id, now=now))
+
+    # 4. build ORM models
+    user_orm = UserModel(**user_in_db.model_dump())
+    password_orm = PasswordModel(**password_in_db.model_dump())
+    rt_in_db = RefreshTokenDBModel.from_token_doc(rt)
+    rt_orm = RefreshTokenModel(**rt_in_db.model_dump())
+
+    # 5. persist all in a single transaction
+    async with db.begin():
+        db.add(user_orm)
+        await db.flush()
+        db.add(password_orm)
+        db.add(rt_orm)
+
+    # 6. build response only after successful DB write
+    user_response = UserResponse.from_db(user_in_db)
+    jwt_response = JWTResponse(token=jwt["token"], iat=jwt["iat"], exp=jwt["exp"])
+
+    return SignupServiceResult(
+        user_response=user_response,
+        jwt_response=jwt_response,
+        rt_raw_token=rt["raw_token"],
     )
-)
-pprint(res)
