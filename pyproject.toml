@@ -12,6 +12,7 @@ dependencies = [
     "psycopg>=3.3.3",
     "pydantic[email]>=2.12.5",
     "pyjwt>=2.11.0",
+    "resend>=2.22.0",
     "sqlalchemy>=2.0.46",
     "uvicorn>=0.40.0",
 ]

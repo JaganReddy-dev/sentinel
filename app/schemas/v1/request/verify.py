@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 
-class SignUpResponse(BaseModel):
+class VerifyEmailRequest(BaseModel):
     user_id: str
-    message: str
+    otp: str
