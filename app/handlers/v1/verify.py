@@ -26,7 +26,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
         },
     },
 )
-async def verify_email_handler(
+async def verify_email_id(
     payload: VerifyEmailRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),

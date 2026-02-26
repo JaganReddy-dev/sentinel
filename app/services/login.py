@@ -1,5 +1,4 @@
 import re
-from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from fastapi import HTTPException
@@ -14,16 +13,11 @@ from app.core.security.password.hash_password import verify_password
 from app.services.tokens import create_jwt_token, create_refresh_token
 from app.schemas.v1.request.tokens import JWTGenRequest
 from app.utils.utc_now import utc_now
+from app.schemas.v1.response.login import LoginServiceResult
 
 
 FAILED_LOGIN_LIMIT = 5
 LOCKOUT_DURATION = 15 * 60  # 15 minutes in seconds
-
-
-@dataclass
-class LoginServiceResult:
-    jwt_response: JWTResponse
-    rt_raw_token: str
 
 
 def is_email(identifier: str) -> bool:

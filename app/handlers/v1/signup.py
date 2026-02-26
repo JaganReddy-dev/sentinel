@@ -13,7 +13,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/signup", response_model=SignUpResponse)
-async def signup(
+async def user_signup(
     payload: UserSignUpRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
