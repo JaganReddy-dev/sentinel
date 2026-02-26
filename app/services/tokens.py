@@ -4,7 +4,7 @@ from app.core.security.tokens.refresh_token.refresh_token_hash import (
 from app.core.security.tokens.refresh_token.raw_refresh_token import (
     create_raw_refresh_token,
 )
-from app.utils.secret import get_required_secret
+from app.utils.get_secret import get_required_secret
 import uuid
 from app.core.security.tokens.jwt.jw_token import encoded_jwt, decoded_jwt
 from app.schemas.v1.request.tokens import JWTGenRequest

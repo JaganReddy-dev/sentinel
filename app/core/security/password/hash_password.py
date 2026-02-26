@@ -31,3 +31,10 @@ def hash_password(password):
         return hashed
     except Exception as e:
         raise ValueError(f"Error hashing password: {str(e)}")
+
+
+def verify_password(raw: str, hashed: str) -> bool:
+    try:
+        return ph.verify(hashed, raw)
+    except Exception:
+        return False

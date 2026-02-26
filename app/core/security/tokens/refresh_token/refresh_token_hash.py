@@ -1,5 +1,5 @@
 import hashlib
-from app.utils.secret import get_required_secret
+from app.utils.get_secret import get_required_secret
 
 
 def create_refresh_token_hash(raw_token: str) -> str:

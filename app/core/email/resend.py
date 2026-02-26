@@ -1,5 +1,5 @@
 import resend
-from app.utils.secret import get_required_secret
+from app.utils.get_secret import get_required_secret
 
 get_resend_api_key = get_required_secret("RESEND_API_KEY")
 

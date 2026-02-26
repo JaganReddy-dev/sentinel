@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from app import models  # noqa: F401
 from app.handlers.v1.signup import router as signup_router
 from app.handlers.v1.verify import router as verify_router
+from app.handlers.v1.login import router as login_router
 
 load_dotenv()
 
@@ -18,3 +19,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(signup_router, prefix="/api/v1")
 app.include_router(verify_router, prefix="/api/v1")
+app.include_router(login_router, prefix="/api/v1")
