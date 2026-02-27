@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
+from fastapi import status
 from app.db.db import get_db
 from app.schemas.v1.response.token import JWTResponse
 from app.services.refresh import refresh_token

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from fastapi import HTTPException
-from starlette import status
+from fastapi import status
 from app.models.refresh_token import RefreshTokenModel
 from app.core.security.tokens.refresh_token.refresh_token_hash import (
     create_refresh_token_hash,

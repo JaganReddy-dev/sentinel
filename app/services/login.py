@@ -1,8 +1,7 @@
-import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from fastapi import HTTPException
-from starlette import status
+from fastapi import status
 from app.schemas.v1.request.login import LoginRequest
 from app.models.user import UserModel
 from app.models.password import PasswordModel
@@ -14,15 +13,11 @@ from app.services.tokens import create_jwt_token, create_refresh_token
 from app.schemas.v1.request.tokens import JWTGenRequest
 from app.utils.utc_now import utc_now
 from app.schemas.v1.response.login import LoginServiceResult
+from app.utils.email import is_email
 
 
 FAILED_LOGIN_LIMIT = 5
 LOCKOUT_DURATION = 15 * 60  # 15 minutes in seconds
-
-
-def is_email(identifier: str) -> bool:
-    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    return bool(re.match(pattern, identifier))
 
 
 async def login_user(request: LoginRequest, db: AsyncSession) -> LoginServiceResult:

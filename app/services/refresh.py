@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from fastapi import HTTPException
-from starlette import status
+from fastapi import status
 from app.models.refresh_token import RefreshTokenModel
 from app.schemas.v1.internal.rt_db_model import RefreshTokenDBModel
 from app.schemas.v1.response.login import LoginServiceResult

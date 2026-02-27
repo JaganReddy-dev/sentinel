@@ -5,7 +5,7 @@ from app.schemas.v1.request.login import LoginRequest
 from app.schemas.v1.response.token import JWTResponse
 from app.services.login import login_user
 from app.schemas.v1.response.error import ErrorResponse
-from starlette import status
+from fastapi import status
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

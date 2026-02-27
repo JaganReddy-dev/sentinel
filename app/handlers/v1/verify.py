@@ -9,7 +9,7 @@ from app.schemas.v1.request.tokens import JWTGenRequest
 from app.schemas.v1.internal.rt_db_model import RefreshTokenDBModel
 from app.models.refresh_token import RefreshTokenModel
 from app.utils.utc_now import utc_now
-from starlette import status
+from fastapi import status
 from app.schemas.v1.response.error import ErrorResponse
 
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from sqlalchemy import select
-from starlette import status
+from fastapi import status
 from fastapi import HTTPException
 from app.schemas.v1.request.signup import UserSignUpRequest
 from app.schemas.v1.internal.user_db_model import UserDBModel

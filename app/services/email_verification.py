@@ -93,12 +93,11 @@ async def verify_email(
     return True, "Email verified successfully"
 
 
-async def resend_otp(email: str, db: AsyncSession) -> tuple[bool, str]:
+async def resend_otp(user_id: str, db: AsyncSession) -> tuple[bool, str]:
     """Resend OTP if cooldown has passed"""
     now = int(utc_now().timestamp())
-
-    # step 1 - get user by email
-    user_result = await db.execute(select(UserModel).where(UserModel.email == email))
+    print(f"user_id received: {repr(user_id)}")
+    user_result = await db.execute(select(UserModel).where(UserModel.id == user_id))
     user = user_result.scalar_one_or_none()
 
     if user is None:
@@ -138,7 +137,7 @@ async def resend_otp(email: str, db: AsyncSession) -> tuple[bool, str]:
         return False, "Failed to save verification record"
 
     try:
-        sent = send_verification_email(email, raw_otp)
+        sent = send_verification_email(user.email, raw_otp)
         if not sent:
             return False, "Failed to send email, please try again"
         return True, "OTP sent successfully"
