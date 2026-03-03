@@ -59,21 +59,21 @@ tests/
 
 ## API Endpoints
 
-| Method | Endpoint                    | Description                       |
-| ------ | --------------------------- | --------------------------------- |
-| POST   | `/api/v1/auth/signup`       | Register a new user               |
-| POST   | `/api/v1/auth/verify-email` | Verify email with OTP             |
-| POST   | `/api/v1/auth/login`        | Login with email or username      |
-| POST   | `/api/v1/auth/refresh`      | Rotate refresh token, get new JWT |
-| POST   | `/api/v1/auth/logout`       | Revoke current session            |
+| Method | Endpoint                           | Description                                   |
+| ------ | ---------------------------------- | --------------------------------------------- |
+| POST   | `/api/v1/auth/signup`              | Register a new user                           |
+| POST   | `/api/v1/auth/verify-email`        | Verify email with OTP                         |
+| POST   | `/api/v1/auth/login`               | Login with email or username                  |
+| POST   | `/api/v1/auth/refresh`             | Rotate refresh token, get new JWT             |
+| POST   | `/api/v1/auth/logout`              | Revoke current session                        |
+| POST   | `/api/v1/auth/resend-verification` | Resend OTP if expired or max attempts reached |
+| POST   | `/api/v1/auth/forgot-pasword`      | Request password reset via email              |
+| POST   | `/api/v1/auth/reset-pasword`       | Reset password with token                     |
 
 ---
 
 ## Upcoming
 
-- `POST /api/v1/auth/resend-verification` — resend OTP if expired or max attempts reached
-- `POST /api/v1/auth/forgot-password` — request password reset via email
-- `POST /api/v1/auth/reset-password` — reset password with token
 - `GET /api/v1/auth/me` — get current user profile
 - `POST /api/v1/auth/logout-all` — revoke all sessions across all devices
 

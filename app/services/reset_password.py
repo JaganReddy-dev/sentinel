@@ -1,9 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from fastapi import HTTPException
-from starlette import status
+from fastapi import status
 from app.models.password import PasswordModel
-from app.models.refresh_token import RefreshTokenModel
 from app.models.password_reset_token import PasswordResetTokenModel
 from app.schemas.v1.internal.password_reset_token_db_model import (
     PasswordResetTokenDBModel,
@@ -11,6 +10,7 @@ from app.schemas.v1.internal.password_reset_token_db_model import (
 from app.core.security.tokens.reset.reset_token import hash_reset_token
 from app.core.security.password.hash_password import hash_password, verify_password
 from app.utils.utc_now import utc_now
+from app.services.logout_all import revoke_all_tokens
 
 
 async def reset_password(raw_token: str, new_password: str, db: AsyncSession) -> str:
@@ -71,11 +71,7 @@ async def reset_password(raw_token: str, new_password: str, db: AsyncSession) ->
             .values(used_at=now)
         )
 
-        await db.execute(
-            update(RefreshTokenModel)
-            .where(RefreshTokenModel.user_id == record.user_id)
-            .values(revoked=True)
-        )
+        await revoke_all_tokens(record.user_id, db)
         await db.commit()
     except Exception:
         await db.rollback()

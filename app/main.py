@@ -11,6 +11,8 @@ from app.handlers.v1.logout import router as logout_router
 from app.handlers.v1.resend import router as resend_router
 from app.handlers.v1.forgot_password import router as forgot_password_router
 from app.handlers.v1.reset_password import router as reset_password_router
+from app.handlers.v1.user import router as user_router
+from app.handlers.v1.logout_all_sessions import router as logout_all_router
 
 
 load_dotenv()
@@ -31,3 +33,8 @@ app.include_router(login_router, prefix="/api/v1")
 app.include_router(logout_router, prefix="/api/v1")
 app.include_router(forgot_password_router, prefix="/api/v1")
 app.include_router(reset_password_router, prefix="/api/v1")
+app.include_router(user_router, prefix="/api/v1")
+app.include_router(logout_all_router, prefix="/api/v1")
+
+
+# ok now check if this is error prone and make it so that errors are handled and handler has all response models and handles errors correctly

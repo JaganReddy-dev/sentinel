@@ -7,15 +7,11 @@ class RefreshToken(BaseModel):
     user_id: str
     raw_token: str
     token: str
-    iat: int
-    exp: int
+    created_at: int
+    expiry: int
     revoked: bool = Field(default=False)
 
 
 class JWTGenRequest(BaseModel):
     sub: str
     now: int
-
-
-class VerifyTokenRequest(BaseModel):
-    token: str

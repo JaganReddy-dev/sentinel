@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
+from fastapi import status
 from app.db.db import get_db
 from app.services.reset_password import reset_password
 from app.schemas.v1.request.reset_password import ResetPasswordRequest

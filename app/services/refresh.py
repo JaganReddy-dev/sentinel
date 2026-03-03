@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import HTTPException, status
 from app.models.refresh_token import RefreshTokenModel
 from app.schemas.v1.internal.rt_db_model import RefreshTokenDBModel
 from app.schemas.v1.response.login import LoginServiceResult
@@ -17,26 +16,35 @@ from app.utils.utc_now import utc_now
 async def refresh_token(raw_token: str, db: AsyncSession) -> LoginServiceResult:
     now = int(utc_now().timestamp())
 
-    # 1. hash the raw token and find in DB
+    # 1. hash and find RT in DB
     hashed = create_refresh_token_hash(raw_token)
-    result = await db.execute(
-        select(RefreshTokenModel).where(RefreshTokenModel.token == hashed)
-    )
-    record = result.scalar_one_or_none()
+    try:
+        result = await db.execute(
+            select(RefreshTokenModel).where(RefreshTokenModel.token == hashed)
+        )
+        record = result.scalar_one_or_none()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch session",
+        )
 
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    # 2. reuse detection - if already revoked, revoke all user tokens
+    # 2. reuse detection
     if record.revoked:
-        await db.execute(
-            update(RefreshTokenModel)
-            .where(RefreshTokenModel.user_id == record.user_id)
-            .values(revoked=True)
-        )
-        await db.commit()
+        try:
+            await db.execute(
+                update(RefreshTokenModel)
+                .where(RefreshTokenModel.user_id == record.user_id)
+                .values(revoked=True)
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token reuse detected, all sessions revoked",
@@ -65,8 +73,15 @@ async def refresh_token(raw_token: str, db: AsyncSession) -> LoginServiceResult:
         )
 
     # 5. issue new JWT + RT
-    jwt = create_jwt_token(JWTGenRequest(sub=record.user_id, now=now))
-    rt = create_refresh_token(record.user_id, now)
+    try:
+        jwt = create_jwt_token(JWTGenRequest(sub=record.user_id, now=now))
+        rt = create_refresh_token(record.user_id, now)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create new session",
+        )
+
     rt_in_db = RefreshTokenDBModel.from_token_doc(rt)
 
     try:
@@ -76,7 +91,7 @@ async def refresh_token(raw_token: str, db: AsyncSession) -> LoginServiceResult:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create new session",
+            detail="Failed to save new session",
         )
 
     return LoginServiceResult(

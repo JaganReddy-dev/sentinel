@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import HTTPException, status
 from app.schemas.v1.request.login import LoginRequest
 from app.models.user import UserModel
 from app.models.password import PasswordModel
@@ -24,30 +23,39 @@ async def login_user(request: LoginRequest, db: AsyncSession) -> LoginServiceRes
     now = int(utc_now().timestamp())
 
     # 1. fetch user by email or username
-    if is_email(request.identifier):
-        result = await db.execute(
-            select(UserModel).where(UserModel.email == request.identifier)
-        )
-    else:
-        result = await db.execute(
-            select(UserModel).where(UserModel.username == request.identifier)
+    try:
+        if is_email(request.identifier):
+            result = await db.execute(
+                select(UserModel).where(UserModel.email == request.identifier)
+            )
+        else:
+            result = await db.execute(
+                select(UserModel).where(UserModel.username == request.identifier)
+            )
+        user = result.scalar_one_or_none()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch user",
         )
 
-    user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
         )
 
     # 2. check account state
     if not user.email_verified:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified",
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive",
         )
 
     if user.is_locked:
@@ -57,7 +65,7 @@ async def login_user(request: LoginRequest, db: AsyncSession) -> LoginServiceRes
                 status_code=status.HTTP_423_LOCKED,
                 detail=f"Account locked. Try again in {remaining} seconds",
             )
-        # lock expired or locked_until not set, unlock account
+        # lock expired — unlock account
         try:
             await db.execute(
                 update(UserModel)
@@ -73,10 +81,17 @@ async def login_user(request: LoginRequest, db: AsyncSession) -> LoginServiceRes
             )
 
     # 3. fetch password record
-    password_result = await db.execute(
-        select(PasswordModel).where(PasswordModel.user_id == user.id)
-    )
-    password = password_result.scalar_one_or_none()
+    try:
+        password_result = await db.execute(
+            select(PasswordModel).where(PasswordModel.user_id == user.id)
+        )
+        password = password_result.scalar_one_or_none()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch password record",
+        )
+
     if password is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -92,10 +107,17 @@ async def login_user(request: LoginRequest, db: AsyncSession) -> LoginServiceRes
             values["is_locked"] = True
             values["locked_until"] = now + LOCKOUT_DURATION
 
-        await db.execute(
-            update(UserModel).where(UserModel.id == user.id).values(**values)
-        )
-        await db.commit()
+        try:
+            await db.execute(
+                update(UserModel).where(UserModel.id == user.id).values(**values)
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update login attempt",
+            )
 
         remaining_attempts = FAILED_LOGIN_LIMIT - new_count
         if remaining_attempts > 0:
@@ -124,8 +146,15 @@ async def login_user(request: LoginRequest, db: AsyncSession) -> LoginServiceRes
         )
 
     # 6. issue JWT + RT
-    jwt = create_jwt_token(JWTGenRequest(sub=user.id, now=now))
-    rt = create_refresh_token(user.id, now)
+    try:
+        jwt = create_jwt_token(JWTGenRequest(sub=user.id, now=now))
+        rt = create_refresh_token(user.id, now)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate tokens",
+        )
+
     rt_in_db = RefreshTokenDBModel.from_token_doc(rt)
 
     try:

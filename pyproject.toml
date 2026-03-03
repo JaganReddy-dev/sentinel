@@ -9,15 +9,13 @@ dependencies = [
     "asyncpg>=0.31.0",
     "fastapi>=0.128.2",
     "greenlet>=3.3.2",
-    "psycopg>=3.3.3",
     "pydantic[email]>=2.12.5",
     "pyjwt>=2.11.0",
+    "python-dotenv>=1.2.1",
     "resend>=2.22.0",
     "sqlalchemy>=2.0.46",
     "uvicorn>=0.40.0",
 ]
 
 [dependency-groups]
-dev = [
-    "python-dotenv>=1.2.1",
-]
+dev = []

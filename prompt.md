@@ -110,11 +110,11 @@ Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh`
 - `POST /api/v1/auth/logout`
-
-## Endpoints Remaining
-
 - `POST /api/v1/auth/resend-verification`
 - `POST /api/v1/auth/forgot-password`
 - `POST /api/v1/auth/reset-password`
+
+## Endpoints Remaining
+
 - `GET  /api/v1/auth/me`
 - `POST /api/v1/auth/logout-all`
